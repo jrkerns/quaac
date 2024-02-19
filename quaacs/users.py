@@ -7,6 +7,3 @@ class User:
     name: str
     id: str
     email: str
-
-
-def
