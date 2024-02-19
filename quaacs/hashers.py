@@ -1,11 +1,12 @@
+import hashlib
 import json
 import zlib
 
 
-def create_hash_from_entry(entry: dict) -> int:
+def create_hash_from_entry(entry: dict) -> str:
     """Create an MD5 hash of the given content. This is for creating keys for the files, equipment and data points on the fly."""
     entry_str = json.dumps(entry, sort_keys=True).encode('utf-8')
-    return zlib.crc32(entry_str)
+    return hashlib.md5(entry_str).hexdigest()
 
 
 def check_hash_from_entry(entry: dict) -> None:

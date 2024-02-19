@@ -1,24 +1,5 @@
 import base64
 import gzip
-import mimetypes
-from dataclasses import dataclass, field, asdict
-from pathlib import Path
-
-from quaacs.hashers import create_hash_from_entry
-
-
-@dataclass
-class File:
-    """A file defined in a YAML spec file."""
-    name: str
-    type: str
-    encoding: str
-    compression: str
-    content: str
-    hash: int = field(init=False, default=None)
-
-    def __post_init__(self):
-        self.hash = create_hash_from_entry(asdict(self))
 
 
 class Compression:
@@ -64,36 +45,6 @@ def get_encoder(encoding: str) -> callable:
         return Encoding.BASE64['encoder']
     else:
         raise ValueError(f"Unsupported encoding: {encoding}")
-
-
-def create_file_entry(path: Path, encoding: str = 'base64', compression: str | None = 'gzip') -> File:
-    """Create a file entry for a given file from disk.
-
-    Parameters
-    ----------
-    path : Path
-        The path to the file.
-    encoding : str, optional
-        The encoding to use. Default is base64.
-    compression : str, optional
-        The compression to use. Default is gzip.
-    """
-    with open(path, 'rb') as file:
-        content = file.read()
-    if compression:
-        compressor = get_compressor(compression)
-        content = compressor(content)
-    # encode
-    encoder = get_encoder(encoding)
-    content = encoder(content).decode('utf-8')
-    entry = File(
-        name=path.name,
-        type=mimetypes.guess_type(path)[0],
-        encoding=encoding,
-        compression=compression,
-        content=content,
-    )
-    return entry
 
 
 def parse_file_entry(document: File) -> bytes:
