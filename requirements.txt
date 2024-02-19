@@ -1,0 +1,3 @@
+nox
+sphinx
+pyyaml
