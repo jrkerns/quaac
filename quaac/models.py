@@ -5,7 +5,7 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, computed_field, Field, field_serializer, ConfigDict, model_validator
 
-from quaacs.hashers import create_hash_from_entry
+from quaac.hashers import create_hash_from_entry
 
 class HashMixin:
 

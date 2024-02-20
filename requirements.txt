@@ -1,3 +1,4 @@
 nox
 sphinx
 pyyaml
+pydantic>=2.0.0
