@@ -7,6 +7,7 @@ def serve_docs(session):
         "sphinx-autobuild",
         "docs",
         "docs/_build",
+        '-a',
         "--port",
         "8787",
         "--open-browser",

@@ -47,15 +47,15 @@ def get_encoder(encoding: str) -> callable:
         raise ValueError(f"Unsupported encoding: {encoding}")
 
 
-def parse_file_entry(document: File) -> bytes:
-    """Parse a QuAACS document spec.
-
-    We decode according to the encoding key and possibly decompress according to the compression key.
-    We then use the MIME type to load the content into the appropriate Python object."""
-    # Get the decoder and decompresser
-    decoder = get_decoder(document['encoding'])
-    decompresser = get_decompresser(document['compression'])
-    # Decode and decompress the content
-    content = decoder(document['content'])
-    content = decompresser(content)
-    return content
+# def parse_file_entry(document: File) -> bytes:
+#     """Parse a QuAACS document spec.
+#
+#     We decode according to the encoding key and possibly decompress according to the compression key.
+#     We then use the MIME type to load the content into the appropriate Python object."""
+#     # Get the decoder and decompresser
+#     decoder = get_decoder(document['encoding'])
+#     decompresser = get_decompresser(document['compression'])
+#     # Decode and decompress the content
+#     content = decoder(document['content'])
+#     content = decompresser(content)
+#     return content
