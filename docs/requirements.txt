@@ -1,3 +1,4 @@
 pydantic >= 2.0.0
+autodoc-pydantic
 sphinx
 furo
