@@ -1,0 +1,28 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "quaac"
+version = "0.0.2"
+license = "MIT"
+authors = [
+  { name="James Kerns", email="jkerns100@gmail.com" },
+]
+description = "A package for reading and writing QuAAC files."
+readme = "README.rst"
+requires-python = ">=3.9"
+dependencies = [
+    "pydantic >= 2.0.0",
+    "email-validator",
+    "pyyaml",
+]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+
+[project.urls]
+Homepage = "https://github.com/jrkerns/quaac"
+Issues = "https://github.com/jrkerns/quaac/issues"

@@ -23,10 +23,12 @@ def get_decoder(encoding: str):
         raise ValueError(f"Unsupported encoding: {encoding}")
 
 
-def get_compressor(compression: str):
+def get_compressor(compression: str | None):
     """Get the compression function for the given compression."""
     if compression == Compression.GZIP['compression']:
         return Compression.GZIP['compress']
+    elif compression is None:
+        return Compression.NONE['compress']
     else:
         raise ValueError(f"Unsupported compression: {compression}")
 
@@ -35,6 +37,8 @@ def get_decompresser(compression: str):
     """Get the compression function for the given compression."""
     if compression == Compression.GZIP['compression']:
         return Compression.GZIP['decompress']
+    elif compression is None:
+        return Compression.NONE['decompress']
     else:
         raise ValueError(f"Unsupported compression: {compression}")
 
@@ -45,17 +49,3 @@ def get_encoder(encoding: str) -> callable:
         return Encoding.BASE64['encoder']
     else:
         raise ValueError(f"Unsupported encoding: {encoding}")
-
-
-# def parse_file_entry(document: File) -> bytes:
-#     """Parse a QuAACS document spec.
-#
-#     We decode according to the encoding key and possibly decompress according to the compression key.
-#     We then use the MIME type to load the content into the appropriate Python object."""
-#     # Get the decoder and decompresser
-#     decoder = get_decoder(document['encoding'])
-#     decompresser = get_decompresser(document['compression'])
-#     # Decode and decompress the content
-#     content = decoder(document['content'])
-#     content = decompresser(content)
-#     return content

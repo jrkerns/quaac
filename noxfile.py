@@ -12,3 +12,22 @@ def serve_docs(session):
         "8787",
         "--open-browser",
     )
+
+@nox.session(python=False)
+def build_dist(session):
+    session.run(
+        "python",
+        "-m",
+        "build",
+    )
+
+@nox.session(python=False)
+def publish_dist(session):
+    session.run(
+        "twine",
+        "upload",
+        "dist/*",
+        "--skip-existing",
+        '--config-file',
+        '.pypirc',
+    )

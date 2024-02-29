@@ -1,11 +1,3 @@
-.. QuAAC documentation master file, created by
-   sphinx-quickstart on Fri Jan 19 14:13:00 2024.
-   You can adapt this file completely to your liking, but it should at least
-   contain the root `toctree` directive.
-
-Welcome to QuAAC's documentation!
-=================================
-
 ===========
 About QuAAC
 ===========
@@ -104,25 +96,3 @@ Reasons to use QuAAC include:
 * Easy to parse and read
 * clinic-to-clinic communication compatibility
 * Vendor switchover compatibility
-
-
-
-.. toctree::
-   :maxdepth: 2
-   :caption: Contents:
-
-   data_models
-   formats
-   library
-   reading_quaac
-   writing_quaac
-
-
-
-
-Indices and tables
-==================
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`

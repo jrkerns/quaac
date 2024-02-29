@@ -7,7 +7,7 @@ different :ref:`formats`. These formats are meant to be human-readable.
 Even without a library, you can often read the data in a text editor.
 This is useful for transparency, debugging, and being language-agnostic.
 That being said, a QuAAC library is provided to help read and write
-these files in a programmatic way.
+these files in a programmatic way. See :ref:`library`.
 
 
 Reading a YAML QuAAC file
