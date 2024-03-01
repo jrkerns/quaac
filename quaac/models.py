@@ -5,7 +5,7 @@ import json
 from datetime import datetime
 from functools import cached_property
 from pathlib import Path
-from typing import Any, Literal, Self
+from typing import Any, Literal
 
 import yaml
 from pydantic import BaseModel, computed_field, Field, field_serializer, ConfigDict, model_validator, EmailStr
@@ -43,7 +43,7 @@ class HashMixin:
         return data
 
     @model_validator(mode='after')
-    def check_hash(self) -> Self:
+    def check_hash(self):
         """Check that the hash key from the file matches the dynamic hash. This only happens when loading from JSON/YAML."""
         if self.from_file_hash and self.hash != self.from_file_hash:
             raise ValueError("The hash key from the file does not match the dynamic hash. The file has been edited since created.")
