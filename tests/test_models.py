@@ -61,7 +61,6 @@ class TestHasher(TestCase):
         self.assertEqual(hash, '5ef2d60d51b2dad78f9a6f5be9c6fa38')
 
 
-
 class BaseModelTester(ABC):
 
     @abstractmethod
@@ -72,7 +71,9 @@ class BaseModelTester(ABC):
     def test_invalid_create(self):
         pass
 
-
+    @abstractmethod
+    def test_extras(self):
+        pass
 
 
 class TestUserModel(BaseModelTester, TestCase):
@@ -88,6 +89,10 @@ class TestUserModel(BaseModelTester, TestCase):
         with self.assertRaises(ValidationError):
             u = User(name="Johnny", email="j@j")
 
+    def test_extras(self):
+        u = User(name="Johnny", email="j@j.com", role="admin")
+        self.assertEqual(u.role, "admin")
+
 
 class TestEquipmentModel(BaseModelTester, TestCase):
 
@@ -98,6 +103,11 @@ class TestEquipmentModel(BaseModelTester, TestCase):
         with self.assertRaises(ValidationError):
             e = Equipment(name="linac")
 
+    def test_extras(self):
+        e = Equipment(name="TB", serial_number="1234", type="linac", model="TrueBeam", manufacturer="Varian", location="1234")
+        self.assertEqual(e.location, "1234")
+
+
 class TestAttachmentModel(BaseModelTester, TestCase):
 
     def test_valid_create(self):
@@ -106,6 +116,10 @@ class TestAttachmentModel(BaseModelTester, TestCase):
     def test_invalid_create(self):
         with self.assertRaises(ValidationError):
             a = Attachment(name="test")
+
+    def test_extras(self):
+        a = Attachment(name="test", content=b"test", source="network share")
+        self.assertEqual(a.source, "network share")
 
     def test_from_file(self):
         # create temp file
@@ -123,11 +137,20 @@ class TestAttachmentModel(BaseModelTester, TestCase):
 
         # create attachment from file
         a = Attachment.from_file(f.name)
-        a.to_file(f"intermediate")
+        with tempfile.NamedTemporaryFile(delete=False) as f2:
+            a.to_file(f2.name)
 
         # read the file and compare the content
-        a2 = Attachment.from_file("intermediate")
+        a2 = Attachment.from_file(f2.name)
         self.assertEqual(a.content, a2.content)
+
+    def test_to_file_no_name(self):
+        with tempfile.NamedTemporaryFile(delete=False) as f:
+            f.write(b"test")
+        a = Attachment.from_file(f.name)
+        a.to_file()
+        # should write to the current directory w/ name of the file it was created with.
+        self.assertTrue((Path('.') / Path(f.name).name).exists())
 
     def test_no_compression(self):
         # create temp file
@@ -147,6 +170,10 @@ class TestDataPointModel(BaseModelTester, TestCase):
     def test_invalid_create(self):
         with self.assertRaises(ValidationError):
             dp = DataPoint(value=1.0)
+
+    def test_extras(self):
+        dp = create_datapoint(name="test", pylinac_version="3.20")
+        self.assertEqual(dp.pylinac_version, "3.20")
 
     def test_ancillary_equipment(self):
         e1 = create_equipment(name='Catphan')
@@ -171,14 +198,14 @@ class TestDataPointModel(BaseModelTester, TestCase):
         e = create_equipment()
         dp = create_datapoint(primary_equipment=e)
         json_data = json.loads(dp.model_dump_json())
-        self.assertEqual(json_data['primary_equipment'], e.hash)
+        self.assertEqual(json_data['primary_equipment'], e.named_hash())
 
     def test_serialize_reviewer(self):
         """Assert that when dumping to JSON that the hash is used for the reviewer"""
         reviewer = create_user()
         dp = create_datapoint(reviewer=reviewer)
         json_data = json.loads(dp.model_dump_json())
-        self.assertEqual(json_data['reviewer'], reviewer.hash)
+        self.assertEqual(json_data['reviewer'], reviewer.named_hash())
 
     def test_serialize_no_reviewer(self):
         """Should be none if no reviewer"""
@@ -193,7 +220,7 @@ class TestDataPointModel(BaseModelTester, TestCase):
         e2 = create_equipment(name='Ion chamber')
         dp = create_datapoint(ancillary_equipment=[e1, e2])
         json_data = json.loads(dp.model_dump_json())
-        self.assertEqual(json_data['ancillary_equipment'], [e1.hash, e2.hash])
+        self.assertEqual(json_data['ancillary_equipment'], [e1.named_hash(), e2.named_hash()])
 
     def test_serialize_no_ancillary_equipment(self):
         """Should be empty list if no ancillary equipment"""
@@ -207,7 +234,7 @@ class TestDataPointModel(BaseModelTester, TestCase):
         performer = create_user()
         dp = create_datapoint(performer=performer)
         json_data = json.loads(dp.model_dump_json())
-        self.assertEqual(json_data['performer'], performer.hash)
+        self.assertEqual(json_data['performer'], performer.named_hash())
 
     def test_serialize_attachments(self):
         """Assert that when dumping to JSON that the hash is used for the attachments"""
@@ -215,7 +242,7 @@ class TestDataPointModel(BaseModelTester, TestCase):
         a2 = create_attachment()
         dp = create_datapoint(attachments=[a1, a2])
         json_data = json.loads(dp.model_dump_json())
-        self.assertEqual(json_data['attachments'], [a1.hash, a2.hash])
+        self.assertEqual(json_data['attachments'], [a1.named_hash(), a2.named_hash()])
 
     def test_serialize_no_attachments(self):
         """Should be empty list if no attachments"""
@@ -234,6 +261,10 @@ class TestDocumentModel(BaseModelTester, TestCase):
         with self.assertRaises(ValidationError):
             d = Document(version="1.0")
 
+    def test_extras(self):
+        d = Document(version="1.0", datapoints=[create_datapoint()], pylinac_version="3.20")
+        self.assertEqual(d.pylinac_version, "3.20")
+
     def test_bad_version(self):
         with self.assertRaises(ValidationError):
             d = Document(version="3.9", datapoints=[create_datapoint()])
@@ -251,7 +282,7 @@ class TestDocumentModel(BaseModelTester, TestCase):
         d = Document(version="1.0", datapoints=[create_datapoint(performer=u1, reviewer=u2), create_datapoint(performer=u2)])
         self.assertIn(u1.hash, [u.hash for u in d.users])
         self.assertIn(u2.hash, [u.hash for u in d.users])
-        self.assertEqual(d.datapoints[0].performer.hash, u1.hash)
+        self.assertEqual(d.datapoints[0].performer.named_hash(), u1.named_hash())
 
     def test_equipment_coalesces(self):
         e1 = create_equipment(name='Catphan')
@@ -264,8 +295,8 @@ class TestDocumentModel(BaseModelTester, TestCase):
         e1 = create_equipment(name='Catphan')
         e2 = create_equipment(name='Ion chamber')
         d = Document(version="1.0", datapoints=[create_datapoint(primary_equipment=e1, ancillary_equipment=[e2]), create_datapoint(primary_equipment=e2)])
-        self.assertEqual(list(d.equipment)[0].hash, e1.hash)
-        self.assertEqual(list(d.equipment)[1].hash, e2.hash)
+        self.assertEqual(list(d.equipment)[1].hash, e1.hash)
+        self.assertEqual(list(d.equipment)[0].hash, e2.hash)
         self.assertEqual(d.datapoints[0].primary_equipment.hash, e1.hash)
 
     def test_attachments_coalesce(self):
@@ -287,21 +318,25 @@ class TestDocumentModel(BaseModelTester, TestCase):
         with tempfile.NamedTemporaryFile(delete=False) as f:
             d.to_json_file(f.name)
             d2 = Document.from_json_file(f.name)
-        self.assertEqual(d.model_dump_json(), d2.model_dump_json())
+        d1_data = json.loads(d.model_dump_json())
+        d2_data = json.loads(d2.model_dump_json())
+        self.assertEqual(d1_data, d2_data)
 
     def test_yaml_cycle(self):
         """Test going to YAML and back again"""
         d = Document(version="1.0", datapoints=[create_datapoint()])
-        with tempfile.NamedTemporaryFile(delete=False, dir=Path('.')) as f:
+        with tempfile.NamedTemporaryFile(delete=False) as f:
             d.to_yaml_file(f.name)
             d2 = Document.from_yaml_file(f.name)
-        self.assertEqual(d.model_dump_json(), d2.model_dump_json())
+        d1_data = json.loads(d.model_dump_json())
+        d2_data = json.loads(d2.model_dump_json())
+        self.assertEqual(d1_data, d2_data)
 
     def test_edited_file_does_not_validate(self):
         """Test that if the file is edited it will not validate"""
         d = Document(version="1.0", datapoints=[create_datapoint()])
         # first, write the file like normal
-        with tempfile.NamedTemporaryFile(delete=False, dir=Path('.')) as f:
+        with tempfile.NamedTemporaryFile(delete=False) as f:
             d.to_json_file(f.name)
 
         # edit the data
@@ -315,6 +350,24 @@ class TestDocumentModel(BaseModelTester, TestCase):
 
         with self.assertRaises(ValueError):
             d2 = Document.from_json_file(f.name)
+
+    def test_editing_file_validates_with_check_false(self):
+        """If we create and purposely edit the file, we can still load it if we pass check=False"""
+        d = Document(version="1.0", datapoints=[create_datapoint()])
+        # first, write the file like normal
+        with tempfile.NamedTemporaryFile(delete=False) as f:
+            d.to_json_file(f.name)
+
+        # edit the data
+        with open(f.name, 'r') as f:
+            data = json.loads(f.read())
+            data['hash'] = 'bad hash'
+        # save the file
+        with open(f.name, 'w') as f:
+            f.write(json.dumps(data))
+        # ensure it validates
+        d2 = Document.from_json_file(f.name, check_hash=False)
+        self.assertIsInstance(d2, Document)
 
     def test_merge_documents(self):
         u = create_user()

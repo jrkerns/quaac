@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "quaac"
-version = "0.0.2"
+version = "0.0.3"
 license = "MIT"
 authors = [
   { name="James Kerns", email="jkerns100@gmail.com" },
