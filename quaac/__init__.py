@@ -1,1 +1,2 @@
-from .models import Attachment, DataPoint, Equipment, User, Document
+from .models import DataPoint, Equipment, User, Document, Attachment
+

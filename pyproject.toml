@@ -4,7 +4,9 @@ build-backend = "hatchling.build"
 
 [project]
 name = "quaac"
-version = "0.0.3"
+dynamic = [
+   "version"  # this will be set by hatch
+]
 license = "MIT"
 authors = [
   { name="James Kerns", email="jkerns100@gmail.com" },
@@ -26,3 +28,7 @@ classifiers = [
 [project.urls]
 Homepage = "https://github.com/jrkerns/quaac"
 Issues = "https://github.com/jrkerns/quaac/issues"
+
+[tool.hatch.version]
+# https://hatch.pypa.io/latest/version/
+path = "quaac/version.py"  # hatch will automatically set the version to the value in this file.

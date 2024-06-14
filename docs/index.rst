@@ -21,7 +21,7 @@ Rationale
 ---------
 
 The QuAAC project was born out of the need to store and exchange routine QA data
-in a vendor-neutral format. Clinics that move between commercial vendors of QA
+in a vendor- and clinic-neutral format. Clinics that move between commercial vendors of QA
 equipment and software are often faced with the challenge of converting their
 data from one paradigm to another, depending on the vendor. This can also
 happen when migrating from a in-house solution to a commercial solution.
@@ -34,12 +34,17 @@ Philosophy
 #. The QuAAC project is a community effort.
 #. The QuAAC project is a living standard and will evolve as use cases are identified and addressed.
 #. QuAAC is meant to store both "interpreted" data as well as raw data.
-#. Raw data is expected and encouraged to be linked with the interpreted data.
-#. The QuAAC project is not a replacement for DICOM, but rather a complement.
-#. Data should be stored in a format that is easily parsed by humans and machines.
+#. Raw data (e.g. PDFs, DICOM, spreadsheets) is expected and encouraged to be linked with the interpreted data.
+#. The QuAAC project is not a replacement for DICOM.
+#. Data should be stored in a format that is easily parsed by humans or machines [#]_.
 #. QuAAC is not a QA platform.
 #. QuAAC is not meant for patient data.
-#. QuAAC is vendor-neutral.
+#. QuAAC is vendor- and clinic-neutral.
+
+.. [#]
+
+   This does not mean all data is simple text, but rather that any of the supported formats should be easily parsed
+   by tools commonly and freely available to the larger community.
 
 
 Comparison with DICOM
@@ -65,7 +70,8 @@ Why not use private DICOM tags?
 Private DICOM tags are a great way to store extra data in a DICOM file.
 However, they are not standardized and are not guaranteed to be readable
 by other vendors. Further, parsing the data from a private DICOM tag is
-no easier than using simple file formats.
+no easier than using simple file formats. Finally, there is plenty of
+QA data that is not image or naturally file-based.
 
 Examples of QA data
 -------------------
@@ -88,7 +94,7 @@ QA data vs raw data
 
 We make an important distinction between QA data and raw data. QA data is
 either raw or interpreted data, useful for the evaluation of a machine's
-performance. Raw data is intermediate data that is used to generate QA data.
+performance. Raw data is intermediate data that is used to generate QA data but is not itself the evaluation.
 For example, a profile scan is raw data, but the flatness and symmetry values
 are QA data. Although critical in many cases to generate the QA data, the raw
 data itself is not QA data.

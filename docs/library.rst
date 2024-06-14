@@ -5,7 +5,8 @@ Python Library
 ==============
 
 The QuAAC project includes a Python library that can be used to interact with
-YAML and JSON QuAAC documents.
+YAML and JSON QuAAC documents. It is not required to use the library to interact with QuAAC documents, but it can be useful for
+reading and writing QuAAC documents.
 
 Installation
 ------------
@@ -38,6 +39,9 @@ Model API
 Attachment Options API
 ----------------------
 
-.. automodule:: quaac.attachments
+.. autoclass:: quaac.attachments.Compression
     :members:
-    :show-inheritance:
+
+.. autoclass:: quaac.attachments.Encoding
+    :members:
+

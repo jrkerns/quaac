@@ -8,7 +8,7 @@ from unittest import TestCase, skip
 
 from pydantic import ValidationError
 
-from quaac.models import create_hash_from_entry
+from quaac.common import create_hash_from_entry
 from quaac import User, Equipment, Attachment, Document, DataPoint
 
 

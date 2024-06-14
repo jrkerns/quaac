@@ -1,63 +1,15 @@
 from __future__ import annotations
 
-import hashlib
 import json
 from datetime import datetime
-from functools import cached_property
-from pathlib import Path
 from typing import Any, Literal
 
 import yaml
-from pydantic import BaseModel, computed_field, Field, field_serializer, ConfigDict, model_validator, EmailStr
+from pydantic import computed_field, Field, field_serializer, ConfigDict, model_validator, EmailStr
 from pydantic_core.core_schema import ValidationInfo
 
-from .attachments import get_decoder, get_decompresser, get_encoder, get_compressor
-
-
-def create_hash_from_entry(entry: dict) -> str:
-    """Create an MD5 hash of the given content. This is for creating keys for the files, equipment and data points on the fly."""
-    entry_str = json.dumps(entry, sort_keys=True).encode('utf-8')
-    return hashlib.md5(entry_str).hexdigest()
-
-
-def split_hash(named_hash: str) -> str:
-    """Split a hash into its type and hash value."""
-    return named_hash.split(')')[-1].strip()
-
-
-class HashModel(BaseModel):
-    """A mixin to add a computed hash field to a model. This also checks the hash
-    on the way in from a file to ensure it hasn't changed.
-
-     This verifies that data has not been modified since it was created."""
-    from_file_hash: str | None = Field(exclude=True, default=None, description="The original hash of the entry. Only populates when loading from JSON/YAML.")
-
-    @computed_field()
-    @cached_property
-    def hash(self) -> str:
-        """A dynamic MD5 hash of the entry. This is used to create keys for the files, equipment and data points on the fly."""
-        return create_hash_from_entry(self.model_dump(exclude={'hash'}, mode='json'))
-
-    @model_validator(mode='before')
-    @classmethod
-    def save_original_hash_key(cls: dict, data: Any, info: ValidationInfo) -> dict:
-        """Check that the hash key from the file matches the dynamic hash. This only happens when loading from JSON/YAML."""
-        # this is None when creating the model.
-        original_hash = data.pop('hash', None)
-        if info.context and info.context.get('check_hash', True):
-            data['from_file_hash'] = original_hash
-        return data
-
-    @model_validator(mode='after')
-    def check_hash(self):
-        """Check that the hash key from the file matches the dynamic hash. This only happens when loading from JSON/YAML."""
-        if self.from_file_hash and self.hash != self.from_file_hash:
-            raise ValueError("The hash key from the file does not match the dynamic hash. The file has been edited since created.")
-        return self
-
-    def named_hash(self) -> str:
-        """Return the hash with the name of the object. Adds some clarity when perusing a QuAAC document."""
-        return f"({self.name}) {self.hash}"
+from .common import HashModel, split_hash
+from .attachments import Attachment
 
 
 class DataPoint(HashModel, validate_assignment=True):
@@ -121,72 +73,6 @@ class User(HashModel, validate_assignment=True):
     model_config = ConfigDict(title="User", frozen=True, str_strip_whitespace=True, extra='allow', populate_by_name=True)
     name: str = Field(title="Name", description="The name of the user.", examples=["John Doe", "Jane Smith"])
     email: EmailStr = Field(title="Email", description="The email of the user.", examples=["john@clinic.com", "jane@satellite.com"])
-
-
-class Attachment(HashModel, validate_assignment=True):
-    """A binary file that relates to a data point. This could be a screenshot, DICOM data set, or a PDF."""
-    model_config = ConfigDict(title="Attachment", frozen=True, str_strip_whitespace=True, extra='allow', populate_by_name=True)
-    name: str = Field(title="Name", description="The name of the file.", examples=["catphan.zip", "screenshot.png"])
-    comment: str = Field(default="", title="Comment", description="A comment about the file.", examples=["This is the screenshot of the CBCT"])
-    encoding: str = Field(title="Encoding", default='base64', description="The encoding of the file.", examples=["base64"])
-    compression: str | None = Field(title="Compression", default='gzip', description="The compression of the file.", examples=["gzip"])
-    # we don't use a pydantic encoder here because we use the other field values to determine the encoding and compression
-    # that isn't possible within a pydantic encoder
-    content: bytes = Field(title="Content", description="The content of the file.", examples=["b'H4sIAAAAAAAAA...'"])
-
-    def to_file(self, path: str | None = None) -> None:
-        """Write the content of an attachment to a file on disk.
-
-        Parameters
-        ----------
-        path : str, optional
-            The path to write the file to. If None, the name of the file in the document will be used and
-            will be written to the current working directory.
-        """
-        decoder = get_decoder(self.encoding)
-        decompressor = get_decompresser(self.compression)
-        # Decode and decompress the content
-        decoded_content = decoder(self.content)
-        decomp_content = decompressor(decoded_content)
-        path = path or self.name
-        with open(path, 'wb') as f:
-            f.write(decomp_content)
-
-    @classmethod
-    def from_file(cls, path: str | Path, name: str | None = None, type: str | None = None, comment: str = '', compression: str | None = 'gzip', encoding: str = 'base64') -> Attachment:
-        """Load a file from disk into an attachment.
-
-        Parameters
-        ----------
-        path : str or Path
-            The path to the file to load.
-        name: str | None
-            The name of the file. If None, the name of the passed file will be used.
-        type : str | None
-            The type of the file. E.g. png, json, zip, etc. If None, the extension of the file will be used.
-            The type is not enforced and is not used for anything other than display.
-        comment : str
-            A comment about the file.
-        compression : str | None
-            The compression to use when serializing the file. Default is 'gzip'.
-            If None, no compression will be used.
-
-            .. note:: This is not the saying that the file is ALREADY compressed. This is the compression that **will** be applied only when serializing the file.
-
-        encoding : str
-            The encoding to use when serializing the file. Default is 'base64'.
-
-            .. note:: This is not the saying that the file is ALREADY encoded. This is the encoding that **will** be applied only when serializing the file.
-        """
-        path = Path(path)  # force-convert to Path
-        with open(path, 'rb') as f:
-            raw_content = f.read()
-        encoder = get_encoder(encoding)
-        compressor = get_compressor(compression)
-        # Decode and decompress the content
-        comp_content = compressor(raw_content)
-        enc_content = encoder(comp_content)
-        return Attachment(name=name or path.name, type=type or path.suffix.replace('.', ''), encoding=encoding, comment=comment, compression=compression, content=enc_content)
 
 
 class Document(HashModel, validate_assignment=True):
