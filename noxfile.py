@@ -17,8 +17,7 @@ def serve_docs(session):
 @nox.session(python=False)
 def build_dist(session):
     session.run(
-        "python",
-        "-m",
+        "hatch",
         "build",
     )
 

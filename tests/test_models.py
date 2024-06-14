@@ -151,6 +151,10 @@ class TestAttachmentModel(BaseModelTester, TestCase):
         a.to_file()
         # should write to the current directory w/ name of the file it was created with.
         self.assertTrue((Path('.') / Path(f.name).name).exists())
+        try:
+            (Path('.') / Path(f.name).name).unlink()
+        except FileNotFoundError:
+            pass
 
     def test_no_compression(self):
         # create temp file
