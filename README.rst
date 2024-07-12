@@ -9,6 +9,10 @@ The Quality Assurance Archive & Communication (QuAAC) project is a standardizati
 storage and exchange of routine quality assurance data that spans vendors and
 inter-clinical sites.
 
+Documentation
+-------------
+Visit the `Full Documentation <https://quaac.readthedocs.io/>`_ on Read The Docs for a detailed description.
+
 Rationale
 ---------
 
