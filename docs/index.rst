@@ -122,7 +122,7 @@ Reasons to use QuAAC include:
    library
    reading_quaac
    writing_quaac
-
+   joining_quaac
 
 
 
