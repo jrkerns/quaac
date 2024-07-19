@@ -50,7 +50,7 @@ Joining data
 ------------
 
 As stated in :ref:`data_models`, a QuAAC document can have any number of data points.
-Multiple points can be given to the :class:`~quaac.models.Document` object as items in a list.
+Multiple points can be passed to the :class:`~quaac.models.Document` as items in a list.
 
 .. code-block:: python
 
@@ -62,25 +62,28 @@ Additionally, the :meth:`~quaac.models.Document.merge` method can be used to joi
 This is useful, for example, to record the trend of a measurement over time.
 
 .. code-block:: python
+    :emphasize-lines: 9,10
 
     # Read a previous stored document
     doc = Document.from_yaml_file('my_qa_data.yaml')
 
     # Create a new data point
-    d4 = DataPoint(name="DP", perform_datetime=datetime.datetime.now(), measurement_value=4, measurement_unit="cGy", performer=u, primary_equipment=e, ancillary_equipment=[e], attachments=[a], reviewer=u, parameters={'field size': '10x10cm', 'ssd': '100cm'})
-    doc4 = Document(version='1.0', datapoints=[d2])
+    d4 = DataPoint(name="DP", perform_datetime=datetime.datetime.now(), measurement_value=4, ...)
+    doc4 = Document(version='1.0', datapoints=[d4])
 
     # Merge the two documents and save
     new_doc = doc.merge([doc4])
     new_doc.to_yaml_file('my_qa_data.yaml')
 
 A QuAAC document can contain any kind of measurement not necessarily related to each other.
-A simple Python function can be used to filter data points, for example, using the name attribute.
+A simple Python function can be used to filter data points, for example, using the ``name`` attribute.
 
 .. code-block:: python
 
+    from quaac.models import Document
+
     # Define a function to get the points by name
-    def get_points_by_name(doc: Document, name: str) -> List[DataPoint]:
+    def get_points_by_name(doc: Document, name: str) -> list[DataPoint]:
         return [dp for dp in doc.datapoints if dp.name == name]
 
     # Load a document
@@ -89,8 +92,8 @@ A simple Python function can be used to filter data points, for example, using t
     # Get the data points with name 'DP'
     points = get_points_by_name(doc, 'DP')
     
-    measurements = [dp.measurement_value for dp in points]
-    date = [dp.perform_datetime for dp in points]
+    measurement = [p.measurement_value for p in points]
+    date = [p.perform_datetime for p in points]
 
 Plot the data
 
@@ -101,8 +104,9 @@ Plot the data
     
     fig, ax = plt.subplots()
 
-    ax.plot(date, measurements)
+    ax.plot(date, measurement)
     
+    # Format the date on the x-axis
     locator = mdates.AutoDateLocator(minticks=3, maxticks=7)
     ax.xaxis.set_major_formatter(mdates.ConciseDateFormatter(locator))
 
