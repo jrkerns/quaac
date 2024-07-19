@@ -4,7 +4,7 @@ Writing QuAAC files
 
 .. important::
 
-  This example uses the ``quaac`` Python package to create QuAAC files. You can create QuAAC files using any method you like, as long as the resulting file is a valid QuAAC file.
+  The next examples uses the ``quaac`` Python package to create QuAAC files. You can create QuAAC files using any method you like, as long as the resulting file is a valid QuAAC file.
 
 
 Creating instances of QuAAC data
@@ -49,9 +49,8 @@ to ensure the format is correct.
 Joining data
 ------------
 
-As stated in :ref:`data_models`, a QuAAC document can have any number of datapoints.
-Multiple points can be given to the :class:`~quaac.models.Document` object as items in a list
-at the time of document creation.
+As stated in :ref:`data_models`, a QuAAC document can have any number of data points.
+Multiple points can be given to the :class:`~quaac.models.Document` object as items in a list.
 
 .. code-block:: python
 
@@ -60,36 +59,36 @@ at the time of document creation.
     doc.to_yaml_file('my_qa_data.yaml')
 
 Additionally, the :meth:`~quaac.models.Document.merge` method can be used to join two documents together.
-This is useful for example to record the tendendy of a measurement over time.
+This is useful, for example, to record the trend of a measurement over time.
 
 .. code-block:: python
 
     # Read a previous stored document
-    doc = Document.from_yaml_file('qa_data.yaml')
+    doc = Document.from_yaml_file('my_qa_data.yaml')
 
-    # Create a new data point and document
-    d2 = DataPoint(name="DP", perform_datetime=datetime.datetime.now(), measurement_value=4, measurement_unit="cGy", performer=u, primary_equipment=e, ancillary_equipment=[e], attachments=[a], reviewer=u, parameters={'field size': '10x10cm', 'ssd': '100cm'})
-    doc2 = Document(version='1.0', datapoints=[d2])
+    # Create a new data point
+    d4 = DataPoint(name="DP", perform_datetime=datetime.datetime.now(), measurement_value=4, measurement_unit="cGy", performer=u, primary_equipment=e, ancillary_equipment=[e], attachments=[a], reviewer=u, parameters={'field size': '10x10cm', 'ssd': '100cm'})
+    doc4 = Document(version='1.0', datapoints=[d2])
 
     # Merge the two documents and save
-    new_doc = doc.merge([doc2])
+    new_doc = doc.merge([doc4])
     new_doc.to_yaml_file('my_qa_data.yaml')
 
-A QuAAC document does not necesarly has to have related kind of
-measurements. A simple python fuction can be used to filter data points
-using the `name` attribute.
+A QuAAC document can contain any kind of measurement not necessarily related to each other.
+A simple Python function can be used to filter data points, for example, using the name attribute.
 
 .. code-block:: python
 
-    # Define a function to get the points by name attribute
-    def get_points_by_name(doc, name: str):
+    # Define a function to get the points by name
+    def get_points_by_name(doc: Document, name: str) -> List[DataPoint]:
         return [dp for dp in doc.datapoints if dp.name == name]
 
-    # Read a previous stored document
-    doc = Document.from_yaml_file('qa_data.yaml')
+    # Load a document
+    doc = Document.from_yaml_file('my_qa_data.yaml')
 
-    # Get the data points by name
+    # Get the data points with name 'DP'
     points = get_points_by_name(doc, 'DP')
+    
     measurements = [dp.measurement_value for dp in points]
     date = [dp.perform_datetime for dp in points]
 
@@ -101,7 +100,9 @@ Plot the data
     import matplotlib.dates as mdates
     
     fig, ax = plt.subplots()
+
     ax.plot(date, measurements)
+    
     locator = mdates.AutoDateLocator(minticks=3, maxticks=7)
     ax.xaxis.set_major_formatter(mdates.ConciseDateFormatter(locator))
 
