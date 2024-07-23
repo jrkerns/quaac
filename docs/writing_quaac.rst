@@ -22,7 +22,7 @@ Assuming you are using the ``quaac`` package, you can create a QuAAC file by cre
   a = Attachment.from_file(Path(r"C:\path\to\screenshot.png"))
   e = Equipment(name="TrueBeam 1", type="Linac", serial_number="12345", manufacturer="Varian", model="TrueBeam")
   u = User(name="John Doe", email="john@doe.com")
-  d = DataPoint(name="DP1", perform_datetime=datetime.datetime.now(), measurement_value=3, measurement_unit="cGy", performer=u, primary_equipment=e, ancillary_equipment=[e], attachments=[a], reviewer=u, parameters={'field size': '10x10cm', 'ssd': '100cm'})
+  d = DataPoint(name="DP", perform_datetime=datetime.datetime.now(), measurement_value=3, measurement_unit="cGy", performer=u, primary_equipment=e, ancillary_equipment=[e], attachments=[a], reviewer=u, parameters={'field size': '10x10cm', 'ssd': '100cm'})
   doc = Document(version='1.0', datapoints=[d])
 
 Above, we have created an attachment, which is any binary file that is associated with the data point. We can load straight from disk.
