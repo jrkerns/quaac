@@ -13,7 +13,7 @@ authors = [
 ]
 description = "A package for reading and writing QuAAC files."
 readme = "README.rst"
-requires-python = ">=3.9"
+requires-python = ">=3.8"
 dependencies = [
     "pydantic >= 2.0.0",
     "email-validator",
@@ -32,3 +32,11 @@ Issues = "https://github.com/jrkerns/quaac/issues"
 [tool.hatch.version]
 # https://hatch.pypa.io/latest/version/
 path = "quaac/version.py"  # hatch will automatically set the version to the value in this file.
+
+[tool.uv]
+dev-dependencies = [
+    'hatch',
+    'sphinx',
+    'sphinx-autobuild',
+    'nox'
+]
