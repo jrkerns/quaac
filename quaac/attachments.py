@@ -7,6 +7,7 @@ from pathlib import Path
 from pydantic import ConfigDict, Field
 
 from .common import HashModel
+from . import peewee_models as pw
 
 
 class Compression:
@@ -65,7 +66,7 @@ def get_encoder(encoding: str) -> callable:
         raise ValueError(f"Unsupported encoding: {encoding}")
 
 
-class Attachment(HashModel, validate_assignment=True):
+class Attachment(HashModel, pw.PeeWeeMixin, validate_assignment=True):
     """A binary file that relates to a data point. This could be a screenshot, DICOM data set, or a PDF."""
     model_config = ConfigDict(title="Attachment", frozen=True, str_strip_whitespace=True, extra='allow', populate_by_name=True)
     name: str = Field(title="Name", description="The name of the file.", examples=["catphan.zip", "screenshot.png"])
@@ -76,7 +77,16 @@ class Attachment(HashModel, validate_assignment=True):
     # that isn't possible within a pydantic encoder
     content: bytes = Field(title="Content", description="The content of the file.", examples=["b'H4sIAAAAAAAAA...'"])
 
-    def to_file(self, path: str | None = None) -> None:
+    def _to_peewee(self, db_path: Path) -> int:
+        """Save the attachment to the database and store the file
+        itself beside the database file."""
+        storage_dir = db_path.parent.absolute() / db_path.with_name('attachments')
+        storage_dir.mkdir(exist_ok=True)
+        f_path = self.to_file(path=storage_dir / self.hash)
+        rel_path = f_path.relative_to(db_path.parent.absolute())
+        return pw.Attachment.get_or_create(name=self.name, comment=self.comment, encoding=self.encoding, compression=self.compression, file_name=rel_path)[0]
+
+    def to_file(self, path: Path | str | None = None) -> Path:
         """Write the content of an attachment to a file on disk.
 
         Parameters
@@ -90,9 +100,12 @@ class Attachment(HashModel, validate_assignment=True):
         # Decode and decompress the content
         decoded_content = decoder(self.content)
         decomp_content = decompressor(decoded_content)
-        path = path or self.name
+        path = Path(path or self.name).absolute()
+        if path.is_dir():
+            path = path / self.name
         with open(path, 'wb') as f:
             f.write(decomp_content)
+        return path
 
     @classmethod
     def from_file(cls, path: str | Path, name: str | None = None, type: str | None = None, comment: str = '', compression: str | None = 'gzip', encoding: str = 'base64') -> Attachment:

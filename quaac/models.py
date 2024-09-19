@@ -2,9 +2,12 @@ from __future__ import annotations
 
 import json
 from datetime import datetime
+from pathlib import Path
 from typing import Any, Literal
 
 import yaml
+from peewee import SqliteDatabase, Model
+from . import peewee_models as pw
 from pydantic import computed_field, Field, field_serializer, ConfigDict, model_validator, EmailStr
 from pydantic_core.core_schema import ValidationInfo
 
@@ -12,7 +15,7 @@ from .common import HashModel, split_hash
 from .attachments import Attachment
 
 
-class DataPoint(HashModel, validate_assignment=True):
+class DataPoint(HashModel, pw.PeeWeeMixin, validate_assignment=True):
     """A singular measurement of a quality assurance session."""
     model_config = ConfigDict(title="DataPoint", description="A data point defined in a YAML spec file.", ser_json_bytes='utf8', ser_json_timedelta='iso8601', str_strip_whitespace=True, extra='allow', populate_by_name=True)
 
@@ -30,6 +33,27 @@ class DataPoint(HashModel, validate_assignment=True):
     parameters: dict[str, Any] = Field(default_factory=dict, title="Parameters", description="Any parameters used to perform the measurement.", examples=[{"field_size": "10x10cm", "ssd": "100cm"}])
     ancillary_equipment: list[Equipment] = Field(default_factory=list, alias="ancillary equipment", title="Ancillary Equipment", description="The internal IDs of any ancillary equipment used to perform the measurement.", examples=["1"], json_schema_extra={'type': 'string'})
     attachments: list[Attachment] = Field(default_factory=list, title="Attachments", description="The files associated with the measurement.", examples=["1"], json_schema_extra={'type': 'string'})
+
+    def _to_peewee(self, db_path: Path) -> Model:
+        """Convert the data point to a peewee object."""
+        dp = pw.DataPoint.get_or_create(
+            name=self.name,
+            perform_datetime=self.perform_datetime,
+            measurement_value=self.measurement_value,
+            measurement_unit=self.measurement_unit,
+            reference_value=self.reference_value,
+            description=self.description,
+            procedure=self.procedure,
+            performer=self.performer._to_peewee(db_path),
+            primary_equipment=self.primary_equipment._to_peewee(db_path),
+            reviewer=self.reviewer._to_peewee(db_path) if self.reviewer else None
+        )[0]
+        # create M2M relationships
+        for e in self.ancillary_equipment:
+            pw.AncillaryEquipment.get_or_create(equipment=e._to_peewee(db_path), datapoint=dp)
+        for f in self.attachments:
+            pw.DatapointAttachment.get_or_create(datapoint=dp, attachment=f._to_peewee(db_path))
+
 
     @field_serializer('primary_equipment', when_used='json')
     def serialize_primary_equipment(self, primary_equipment: Equipment, _info) -> str:
@@ -58,7 +82,7 @@ class DataPoint(HashModel, validate_assignment=True):
         return [f"({f.name}) {f.hash}" for f in attachments]
 
 
-class Equipment(HashModel, validate_assignment=True):
+class Equipment(HashModel, pw.PeeWeeMixin, validate_assignment=True):
     """A peice of equipment. This could be primary equipment such as a linac or ancillary equipment such as a phantom or chamber."""
     model_config = ConfigDict(title="Equipment", frozen=True, str_strip_whitespace=True, extra='allow', populate_by_name=True)
     name: str = Field(title="Name", description="The name of the equipment.", examples=["TrueBeam 1", "Basement 600"])
@@ -66,13 +90,14 @@ class Equipment(HashModel, validate_assignment=True):
     serial_number: str = Field(title="Serial Number", alias="serial number", description="The serial number of the equipment.", examples=["12345", "H192311"])
     manufacturer: str = Field(title="Manufacturer", description="The manufacturer of the equipment.", examples=["Varian", "Siemens"])
     model: str = Field(title="Model", description="The model of the equipment.", examples=["TrueBeam", "Artiste"])
+    _peewee_model = pw.Equipment
 
-
-class User(HashModel, validate_assignment=True):
+class User(HashModel, pw.PeeWeeMixin, validate_assignment=True):
     """A user. This could be the performer or reviewer of a data point."""
     model_config = ConfigDict(title="User", frozen=True, str_strip_whitespace=True, extra='allow', populate_by_name=True)
     name: str = Field(title="Name", description="The name of the user.", examples=["John Doe", "Jane Smith"])
     email: EmailStr = Field(title="Email", description="The email of the user.", examples=["john@clinic.com", "jane@satellite.com"])
+    _peewee_model = pw.User
 
 
 class Document(HashModel, validate_assignment=True):
@@ -99,6 +124,24 @@ class Document(HashModel, validate_assignment=True):
     def attachments(self) -> set[Attachment]:
         """The unique attachments from the datapoints."""
         return {f for d in self.datapoints for f in d.attachments}
+
+    def to_sqlite(self, db_path: Path | str) -> None:
+        """Write the document to an SQLite database."""
+        # we use peewee to construct the tables and write the data
+        db_path = Path(db_path)
+        sqlite_db = SqliteDatabase(database=db_path)
+        sqlite_db.bind(pw.ALL_MODELS)
+        sqlite_db.create_tables(pw.ALL_MODELS)
+        for d in self.datapoints:
+            d._to_peewee(db_path)
+
+    def from_sqlite(self, db_path: Path | str, n_rows: int = 100) -> Document:
+        """Load a document from a SQLite file"""
+        db_path = Path(db_path)
+        sqlite_db = SqliteDatabase(database=db_path)
+        sqlite_db.bind(pw.ALL_MODELS)
+        # for d in self.datapoints:
+        #     d._to_peewee(db_path)
 
     def to_json_file(self, path: str, indent: int = 4) -> None:
         """Write the document to a JSON file."""
