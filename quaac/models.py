@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 from datetime import datetime
-from typing import Any, Literal
+from typing import Any, Literal, Set
 
 import yaml
 from pydantic import computed_field, Field, field_serializer, ConfigDict, model_validator, EmailStr
@@ -81,22 +81,22 @@ class Document(HashModel, validate_assignment=True):
     version: Literal['1.0'] = Field(title="Version", default="1.0", description="The version of the QuAAC document.")
     datapoints: list[DataPoint] = Field(title="Data Points", description="The data points in the document.")
 
-    @computed_field(return_type=set[Equipment])
+    @computed_field(return_type=Set[Equipment])
     @property
-    def equipment(self) -> set[Equipment]:
+    def equipment(self) -> Set[Equipment]:
         """The unique equipment from the datapoints."""
         return {d.primary_equipment for d in self.datapoints} | {e for d in self.datapoints for e in
                                                                  d.ancillary_equipment}
 
-    @computed_field(return_type=set[User])
+    @computed_field(return_type=Set[User])
     @property
-    def users(self) -> set[User]:
+    def users(self) -> Set[User]:
         """The unique users from the datapoints."""
         return {d.performer for d in self.datapoints} | {d.reviewer for d in self.datapoints if d.reviewer is not None}
 
-    @computed_field(return_type=set[Attachment])
+    @computed_field(return_type=Set[Attachment])
     @property
-    def attachments(self) -> set[Attachment]:
+    def attachments(self) -> Set[Attachment]:
         """The unique attachments from the datapoints."""
         return {f for d in self.datapoints for f in d.attachments}
 

@@ -79,15 +79,15 @@ class BaseModelTester(ABC):
 class TestUserModel(BaseModelTester, TestCase):
 
     def test_valid_create(self):
-        u = User(name="Johnny", email="j@j.com")
+        User(name="Johnny", email="j@j.com")
 
     def test_invalid_create(self):
         with self.assertRaises(ValidationError):
-            u = User(name="Johnny")
+            User(name="Johnny")
 
     def test_invalid_email(self):
         with self.assertRaises(ValidationError):
-            u = User(name="Johnny", email="j@j")
+            User(name="Johnny", email="j@j")
 
     def test_extras(self):
         u = User(name="Johnny", email="j@j.com", role="admin")
@@ -97,11 +97,11 @@ class TestUserModel(BaseModelTester, TestCase):
 class TestEquipmentModel(BaseModelTester, TestCase):
 
     def test_valid_create(self):
-        e = Equipment(name="TB", serial_number="1234", type="linac", model="TrueBeam", manufacturer="Varian")
+        Equipment(name="TB", serial_number="1234", type="linac", model="TrueBeam", manufacturer="Varian")
 
     def test_invalid_create(self):
         with self.assertRaises(ValidationError):
-            e = Equipment(name="linac")
+            Equipment(name="linac")
 
     def test_extras(self):
         e = Equipment(name="TB", serial_number="1234", type="linac", model="TrueBeam", manufacturer="Varian", location="1234")
@@ -111,11 +111,11 @@ class TestEquipmentModel(BaseModelTester, TestCase):
 class TestAttachmentModel(BaseModelTester, TestCase):
 
     def test_valid_create(self):
-        a = Attachment(name="test", content=b"test")
+        Attachment(name="test", content=b"test")
 
     def test_invalid_create(self):
         with self.assertRaises(ValidationError):
-            a = Attachment(name="test")
+            Attachment(name="test")
 
     def test_extras(self):
         a = Attachment(name="test", content=b"test", source="network share")
@@ -169,11 +169,11 @@ class TestAttachmentModel(BaseModelTester, TestCase):
 class TestDataPointModel(BaseModelTester, TestCase):
 
     def test_valid_create(self):
-        dp = create_datapoint()
+        create_datapoint()
 
     def test_invalid_create(self):
         with self.assertRaises(ValidationError):
-            dp = DataPoint(value=1.0)
+            DataPoint(value=1.0)
 
     def test_extras(self):
         dp = create_datapoint(name="test", pylinac_version="3.20")
@@ -259,11 +259,11 @@ class TestDataPointModel(BaseModelTester, TestCase):
 class TestDocumentModel(BaseModelTester, TestCase):
 
     def test_valid_create(self):
-        d = Document(version="1.0", datapoints=[create_datapoint()])
+        Document(version="1.0", datapoints=[create_datapoint()])
 
     def test_invalid_create(self):
         with self.assertRaises(ValidationError):
-            d = Document(version="1.0")
+            Document(version="1.0")
 
     def test_extras(self):
         d = Document(version="1.0", datapoints=[create_datapoint()], pylinac_version="3.20")
@@ -271,7 +271,7 @@ class TestDocumentModel(BaseModelTester, TestCase):
 
     def test_bad_version(self):
         with self.assertRaises(ValidationError):
-            d = Document(version="3.9", datapoints=[create_datapoint()])
+            Document(version="3.9", datapoints=[create_datapoint()])
 
     def test_multiple_user_references_coalesce(self):
         u1 = create_user(name='Randle')
@@ -299,8 +299,10 @@ class TestDocumentModel(BaseModelTester, TestCase):
         e1 = create_equipment(name='Catphan')
         e2 = create_equipment(name='Ion chamber')
         d = Document(version="1.0", datapoints=[create_datapoint(primary_equipment=e1, ancillary_equipment=[e2]), create_datapoint(primary_equipment=e2)])
-        self.assertEqual(list(d.equipment)[1].hash, e1.hash)
-        self.assertEqual(list(d.equipment)[0].hash, e2.hash)
+        equip = {e.name: e for e in d.equipment}
+        # set order not guaranteed
+        self.assertEqual(equip['Catphan'].hash, e1.hash)
+        self.assertEqual(equip['Ion chamber'].hash, e2.hash)
         self.assertEqual(d.datapoints[0].primary_equipment.hash, e1.hash)
 
     def test_attachments_coalesce(self):
@@ -353,7 +355,7 @@ class TestDocumentModel(BaseModelTester, TestCase):
         # ensure it doesn't validate
 
         with self.assertRaises(ValueError):
-            d2 = Document.from_json_file(f.name)
+            Document.from_json_file(f.name)
 
     def test_editing_file_validates_with_check_false(self):
         """If we create and purposely edit the file, we can still load it if we pass check=False"""

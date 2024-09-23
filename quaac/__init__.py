@@ -1,2 +1,2 @@
-from .models import DataPoint, Equipment, User, Document, Attachment
+from .models import DataPoint, Equipment, User, Document, Attachment  #noqa
 
